@@ -1,0 +1,43 @@
+- hosts: raspberry
+  tasks:
+    - name: Install deps
+      become: yes
+      apt:
+        name: "{{ item }}"
+      with_items:
+        - autoconf
+        - automake
+        - avahi-daemon
+        - build-essential
+        - git
+        - libasound2-dev
+        - libavahi-client-dev
+        - libconfig-dev
+        - libdaemon-dev
+        - libpopt-dev
+        - libssl-dev
+        - libtool
+        - xmltoman
+
+    - name: Bulid Shairport Sync
+      shell: |
+        rm -rf /tmp/shairport-sync
+        cd /tmp
+        git clone https://github.com/mikebrady/shairport-sync.git
+        cd shairport-sync
+        git checkout tags/3.1.7
+        autoreconf -i -f
+        ./configure --with-alsa --with-avahi --with-ssl=openssl --with-systemd --with-metadata
+        metadata
+        make
+        sudo make install
+        cd /tmp
+        rm -rf /tmp/shairport-sync
+
+    - name: Enable service
+      become: yes
+      service:
+        name: shairport-sync
+        enabled: yes
+        state: started
+

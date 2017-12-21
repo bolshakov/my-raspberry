@@ -1,0 +1,37 @@
+- hosts: raspberry
+  tasks:
+    - name: Configure Wi-Fi
+      become: yes
+      blockinfile:
+        path: /etc/wpa_supplicant/wpa_supplicant.conf
+        block: |
+          network={
+          	ssid="{{ wifi.ssid }}"
+          	psk={{ wifi.password }}
+          }
+
+    - name: Reconfigure WI-FI interface
+      become: yes
+      shell: wpa_cli -i {{ wi_fi_interface }} reconfigure
+
+    - name: Add SSH key
+      authorized_key:
+        user: "{{ item.user }}"
+        state: "{{ item.state }}"
+        comment: "{{ item.comment }}"
+        key: "{{ item.key }}"
+      with_items: "{{ authorized_keys }}"
+
+    - name: Disable login with password
+      become: yes
+      replace:
+        path: /etc/ssh/sshd_config
+        regexp: '#PasswordAuthentication yes'
+        replace: PasswordAuthentication no
+        backup: yes
+
+    - name: Restrart SSH server
+      become: yes
+      service:
+        name: ssh
+        state: reloaded
